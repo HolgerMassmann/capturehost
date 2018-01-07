@@ -64,8 +64,11 @@ else
   # Handle hour 0 properly (will result in -1 above instead of 23).
   if [ ${previous_hour} -lt 0 ]; then
     previous_hour=23
+    day=$(( $day - 1 ))
   fi
 fi
+
+echo "Using day=${day}, previous hour=${previous_hour}"
 
 #
 # Build directory name for encode call later.
