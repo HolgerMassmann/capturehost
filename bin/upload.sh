@@ -1,43 +1,91 @@
 #!/bin/bash
 
 #
-# Frame rate for encode call later.
+# Base directories.
 #
-frame_rate=24
-
-function usage() {
-  echo "Usage: `basename $0` [hour-of-day]"
-}
-
-if [ $# -gt 1 ]; then
-  usage
-  exit 1
-fi
+basedir=/home/pi/capture
+logdir=${basedir}/logs
+upload_log_file=${logdir}/upload.log
+bindir=${basedir}/bin
 
 #
-# Base directory.
+# Upoad host config.
 #
 upload_host=gaspberrypi.fritz.box
 upload_user=pi
 img_base_dir=/var/lib/tomcat8/webapps/svc/img
 dest_dir=${img_base_dir}
+#
+# Frame rate for encode call later.
+#
+frame_rate=24
 
 #
-# Handle optional input parameter hour-of-day.
+# Error Codes
 #
-if [ $# -eq 1 ]; then
-  hour_of_day=$1
+readonly ERR_SUCCESS=0
+readonly ERR_CONFIG=1
+readonly ERR_UPLOAD=2
+
+#
+# Logging utility
+# Uses global variable upload_log_file
+# Parameters: 1 - message the message to print
+#
+function log() {
+  local message=$1
+  local tstamp=$( date '+%FT%T' ) 
+  echo "${tstamp}: ${message}" | tee -a ${upload_log_file}
+}
+
+#
+# Perform some verifications.
+#
+if [ ! -d ${basedir} ]; then
+  log "${basedir} does not exist, exiting."
+  exit ERR_CONFIG
+fi
+if [ ! -d ${bindir} ]; then
+  log "${bindir} does not exist, exiting."
+  exit ERR_CONFIG
+fi
+if [ ! -d ${logdir} ]; then
+  log "${logdir} does not exist, exiting."
+  exit ERR_CONFIG
+fi
+if [ ! -d ${dest_dir} ]; then
+  log "${dest_dir} does not exist, exiting."
+  exit ERR_CONFIG
+fi
+
+function usage() {
+  log "Usage: `basename $0` [day hour-of-day]"
+}
+
+if [ $# -ne 0 -a $# -ne 2 ]; then
+  usage
+  exit 1
+fi
+
+#
+# Handle optional input parameters day and  hour-of-day.
+#
+if [ $# -eq 2 ]; then
+  day=$1
+  hour_of_day=$2
 else
+  day=$( date '+%d' )
   hour_of_day=$( date '+%H' )
 fi
+log "Using day=${day}, hour_of_day=${hour_of_day}"
 
 #
 # Work from image directory (easier)
 #
 cd ${img_base_dir}
 if [ $? -ne 0 ]; then
-  echo "Could not change directory to ${img_base_dir}, exiting."
-  exit 1
+  log "Could not change directory to ${img_base_dir}, exiting."
+  exit ERR_CONFIG
 fi
 
 #
@@ -51,12 +99,10 @@ year=$( date '+%Y' )
 raw_month=$( date '+%m' )
 month=$( echo ${raw_month} | sed -e 's/^0//' )
 
-day=`date '+%d'`
-
 #
 # Use bash arithmetic context for calculations.
 #
-if [ $# -eq 1 ]; then
+if [ $# -ne 0 ]; then
   previous_hour=${hour_of_day}
 else
   previous_hour=$(( `date '+%k'` - 1 ))
@@ -68,7 +114,7 @@ else
   fi
 fi
 
-echo "Using day=${day}, previous hour=${previous_hour}"
+log "Using day=${day}, previous hour=${previous_hour}"
 
 #
 # Build directory name for encode call later.
@@ -80,30 +126,30 @@ img_directory=$( printf '%04d/%02d/%02d/%02d' ${year} ${raw_month#0} ${day#0} ${
 #
 pattern=$( printf 'r_%d%02d%02d' ${month#0} ${day#0} ${previous_hour#0} )
 
-echo "Matching ${pattern}*"
-echo "Copying $( ls ${img_base_dir}/${pattern}* | wc -l ) files."
+log "Matching ${pattern}*"
+log "Copying $( ls ${img_base_dir}/${pattern}* | wc -l ) files."
 
-echo "Copying images to upload host ${upload_host}:${dest_dir}"
+log "Copying images to upload host ${upload_host}:${dest_dir}"
 scp -p ${pattern}* ${upload_user}'@'${upload_host}:${dest_dir}
 ret=$?
 
 if [ $ret -ne 0 ]; then
-  echo "Could not copy images to upload host."
+  log "Could not copy images to upload host."
   exit 2
 else
-  echo "Removing images matching pattern ${pattern}*.jpg after successfull copy."
+  log "Removing images matching pattern ${pattern}*.jpg after successfull copy."
   rm ${pattern}*.jpg
 fi
 
-echo "`date`: Copy completed, running archive on upload host..."
-echo "ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}* "
+log "`date`: Copy completed, running archive on upload host..."
+log "ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}* "
 
 ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}*
 ret=$?
 if [ $ret -ne 0 ]; then
-  echo "Uploading of images failed ($ret)."
+  log "Uploading of images failed ($ret)."
   exit 1
 fi
 
-echo "ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}"
+log "ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}"
 ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}
