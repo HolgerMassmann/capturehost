@@ -1,7 +1,7 @@
 #!/bin/sh
 
-imgdir=/var/images
-latest=/var/images/latest.jpg
+imgdir=/var/lib/tomcat8/webapps/svc/img
+latest=/run/images/latest.jpg
 
 usage() {
   echo "`basename $0` delay width height prefix imgdir"
