@@ -8,6 +8,10 @@ img_dir=/var/lib/tomcat8/webapps/svc/img
 latest_img=${img_dir}/latest.jpg
 log_file=${base_dir}/logs/watchdog.log
 
+width=640
+height=400
+delay=3000
+
 #
 # Contains the process id of the running raspistill process.
 #
@@ -25,8 +29,8 @@ function log() {
 function restart_image_capture() {
   log "Terminating process ${pid}"
   # kill $( pgrep ${program_name} )
-  log "Restarting image capture using ${program_wrapper} 3000 640 400 r_ ${img_dir}"
-  ${program_wrapper} 3000 640 400 r_ ${img_dir}
+  log "Restarting image capture using ${program_wrapper} ${delay} ${width} ${height} r_ ${img_dir}"
+  ${program_wrapper} ${delay} ${width} ${height} r_ ${img_dir}
 }
 
 #
