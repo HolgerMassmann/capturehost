@@ -39,6 +39,40 @@ function log() {
 }
 
 #
+# Send an email notification.
+#
+function notify() {
+  local message=$1
+}
+
+#
+# Verify ssh to upload host is working.
+#
+function check_upload_host() {
+  local user=$1
+  local host=$2
+
+  log "Checking ssh connection to host ${host}..."
+  ssh -o ConnectTimeout=10 ${user}'@'${host} date > /dev/null
+  ret=$?
+  if [[ $ret -ne 0 ]]; then
+    log "Connect to upload host ${host} failed with ret=${ret}, sending notification"
+    notify "Connect to upload host ${host} failed with ret=${ret}"
+  else
+    log "Connection to upload host ${host} seems to work."
+  fi
+}
+
+function usage() {
+  log "Usage: `basename $0` [day hour-of-day]"
+}
+
+if [ $# -ne 0 -a $# -ne 2 ]; then
+  usage
+  exit 1
+fi
+
+#
 # Perform some verifications.
 #
 if [ ! -d ${basedir} ]; then
@@ -58,14 +92,7 @@ if [ ! -d ${dest_dir} ]; then
   exit ERR_CONFIG
 fi
 
-function usage() {
-  log "Usage: `basename $0` [day hour-of-day]"
-}
-
-if [ $# -ne 0 -a $# -ne 2 ]; then
-  usage
-  exit 1
-fi
+check_upload_host ${upload_user} ${upload_host}
 
 #
 # Handle optional input parameters day and  hour-of-day.
