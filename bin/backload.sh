@@ -17,10 +17,11 @@ fi
 #
 # Base directory.
 #
-upload_host=gaspberrypi.fritz.box
+upload_host=raspberry.fritz.box
 upload_user=pi
-img_base_dir=/var/lib/tomcat8/webapps/svc/img
-dest_dir=${img_base_dir}
+img_base_dir=/var/images
+src_dir=${img_base_dir}
+dest_dir=/home/pi/images/raspi2
 
 #
 # Handle input parameters day and hour-of-day.
@@ -32,9 +33,9 @@ hour_of_day=$2
 #
 # Work from image directory (easier)
 #
-cd ${img_base_dir}
+cd ${src_dir}
 if [ $? -ne 0 ]; then
-  echo "Could not change directory to ${img_base_dir}, exiting."
+  echo "Could not change directory to ${src_dir}, exiting."
   exit 1
 fi
 
