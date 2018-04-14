@@ -5,17 +5,17 @@
 #
 basedir=/home/pi/capture
 logdir=${basedir}/logs
-upload_log_file=${logdir}/upload.log
+upload_log_file=${logdir}/upload_day.log
 bindir=${basedir}/bin
 
 #
 # Upoad host config.
 #
-upload_host=raspberry.fritz.box
+upload_host=plusberry.fritz.box
 upload_user=pi
 img_base_dir=/var/images
 src_dir=${img_base_dir}
-dest_dir=/var/images/daily
+dest_dir=/svc/data/images/daily
 
 #
 # Scripts to call on the receiving side.

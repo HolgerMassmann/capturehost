@@ -11,10 +11,18 @@ bindir=${basedir}/bin
 #
 # Upoad host config.
 #
-upload_host=gaspberrypi.fritz.box
+upload_host=raspberry.fritz.box
 upload_user=pi
-img_base_dir=/var/lib/tomcat8/webapps/svc/img
-dest_dir=${img_base_dir}
+img_base_dir=/var/images
+src_dir=${img_base_dir}
+dest_dir=/var/images/raspi2
+
+#
+# Scripts to call on the receiving side.
+#
+archive_cmd=svc/bin/run_archive.sh
+encode_cmd=svc/bin/run_encode.sh
+
 #
 # Frame rate for encode call later.
 #
@@ -53,8 +61,8 @@ if [ ! -d ${logdir} ]; then
   log "${logdir} does not exist, exiting."
   exit ERR_CONFIG
 fi
-if [ ! -d ${dest_dir} ]; then
-  log "${dest_dir} does not exist, exiting."
+if [ ! -d ${src_dir} ]; then
+  log "${src_dir} does not exist, exiting."
   exit ERR_CONFIG
 fi
 
@@ -82,9 +90,9 @@ log "Using day=${day}, hour_of_day=${hour_of_day}"
 #
 # Work from image directory (easier)
 #
-cd ${img_base_dir}
+cd ${src_dir}
 if [ $? -ne 0 ]; then
-  log "Could not change directory to ${img_base_dir}, exiting."
+  log "Could not change directory to ${src_dir}, exiting."
   exit ERR_CONFIG
 fi
 
@@ -124,10 +132,10 @@ img_directory=$( printf '%04d/%02d/%02d/%02d' ${year} ${raw_month#0} ${day#0} ${
 #
 # Build search pattern for selecting images to copy.
 #
-pattern=$( printf 'r_%d%02d%02d' ${month#0} ${day#0} ${previous_hour#0} )
+pattern=$( printf 'pi2_%d%02d%02d' ${month#0} ${day#0} ${previous_hour#0} )
 
 log "Matching ${pattern}*"
-log "Copying $( ls ${img_base_dir}/${pattern}* | wc -l ) files."
+log "Copying $( ls ${src_dir}/${pattern}* | wc -l ) files."
 
 log "Copying images to upload host ${upload_host}:${dest_dir}"
 scp -p ${pattern}* ${upload_user}'@'${upload_host}:${dest_dir}
@@ -141,15 +149,15 @@ else
   rm ${pattern}*.jpg
 fi
 
-log "`date`: Copy completed, running archive on upload host..."
-log "ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}* "
+log "Copy completed, running ${archive_cmd} on upload host..."
+log "ssh ${upload_user}'@'${upload_host} ${archive_cmd} ${pattern}* "
 
-ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}*
+ssh ${upload_user}'@'${upload_host} ${archive_cmd} ${pattern}*
 ret=$?
 if [ $ret -ne 0 ]; then
-  log "Uploading of images failed ($ret)."
+  log "Uploading of images failed (retcode=$ret)."
   exit 1
 fi
 
-log "ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}"
-ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}
+log "ssh ${upload_user}'@'${upload_host} ${encode_cmd} ${img_directory} ${frame_rate}"
+ssh ${upload_user}'@'${upload_host} ${encode_cmd}  ${img_directory} ${frame_rate}
