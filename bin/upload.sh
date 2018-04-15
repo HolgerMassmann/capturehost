@@ -7,6 +7,7 @@ basedir=/home/pi/capture
 logdir=${basedir}/logs
 upload_log_file=${logdir}/upload.log
 bindir=${basedir}/bin
+DIR="$bindir"
 
 #
 # Upoad host config.
@@ -27,15 +28,29 @@ readonly ERR_SUCCESS=0
 readonly ERR_CONFIG=1
 readonly ERR_UPLOAD=2
 
+log_file="${upload_log_file}"
+# Defines log function
+. "${DIR}/log_def.sh"
+
+# MQ broker configuration settings 
+. "${DIR}/broker_def.sh"
+
+# Publish function
+. "${DIR}/publish_def.sh"
+
 #
 # Logging utility
 # Uses global variable upload_log_file
 # Parameters: 1 - message the message to print
 #
-function log() {
-  local message=$1
-  local tstamp=$( date '+%FT%T' ) 
-  echo "${tstamp}: ${message}" | tee -a ${upload_log_file}
+# function log() {
+#   local message=$1
+#   local tstamp=$( date '+%FT%T' ) 
+#   echo "${tstamp}: ${message}" | tee -a ${upload_log_file}
+# }
+
+function usage() {
+  log "Usage: `basename $0` [day hour-of-day]"
 }
 
 #
@@ -63,10 +78,16 @@ function check_upload_host() {
   fi
 }
 
-function usage() {
-  log "Usage: `basename $0` [day hour-of-day]"
+# Logs the message and publishes it on the message broker.
+function logpub() {
+  local message="$1"
+  log "$message"
+  publish "$message"
 }
 
+#
+# Main script starts here.
+#
 if [ $# -ne 0 -a $# -ne 2 ]; then
   usage
   exit 1
@@ -156,12 +177,12 @@ pattern=$( printf 'r_%d%02d%02d' ${month#0} ${day#0} ${previous_hour#0} )
 log "Matching ${pattern}*"
 log "Copying $( ls ${img_base_dir}/${pattern}* | wc -l ) files."
 
-log "Copying images to upload host ${upload_host}:${dest_dir}"
+logpub "Copying images to upload host ${upload_host}:${dest_dir}"
 scp -p ${pattern}* ${upload_user}'@'${upload_host}:${dest_dir}
 ret=$?
 
 if [ $ret -ne 0 ]; then
-  log "Could not copy images to upload host."
+  logpub "Could not copy images to upload host."
   exit 2
 else
   log "Removing images matching pattern ${pattern}*.jpg after successfull copy."
@@ -169,7 +190,7 @@ else
 fi
 
 log "`date`: Copy completed, running archive on upload host..."
-log "ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}* "
+logpub "ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}* "
 
 ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}*
 ret=$?
@@ -178,5 +199,7 @@ if [ $ret -ne 0 ]; then
   exit 1
 fi
 
-log "ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}"
+logpub "ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}"
 ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}
+
+logpub "Upload done."
