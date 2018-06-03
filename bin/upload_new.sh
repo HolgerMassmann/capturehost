@@ -87,19 +87,19 @@ fi
 #
 if [[ ! -d ${basedir} ]]; then
   log "${basedir} does not exist, exiting."
-  exit ERR_CONFIG
+  exit $ERR_CONFIG
 fi
 if [[ ! -d ${bindir} ]]; then
   log "${bindir} does not exist, exiting."
-  exit ERR_CONFIG
+  exit $ERR_CONFIG
 fi
 if [[ ! -d ${logdir} ]]; then
   log "${logdir} does not exist, exiting."
-  exit ERR_CONFIG
+  exit $ERR_CONFIG
 fi
 if [[ ! -d ${dest_dir} ]]; then
   log "${dest_dir} does not exist, exiting."
-  exit ERR_CONFIG
+  exit $ERR_CONFIG
 fi
 
 check_upload_host ${upload_user} ${upload_host}
