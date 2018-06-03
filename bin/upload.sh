@@ -12,10 +12,11 @@ DIR="$bindir"
 #
 # Upoad host config.
 #
-upload_host=gaspberrypi.fritz.box
+upload_host=plusberry.fritz.box
 upload_user=pi
-img_base_dir=/var/lib/tomcat8/webapps/svc/img
-dest_dir=${img_base_dir}
+img_base_dir=/home/pi/svc_web/img
+dest_dir=/svc/data/images/daily
+
 #
 # Frame rate for encode call later.
 #
@@ -98,19 +99,19 @@ fi
 #
 if [ ! -d ${basedir} ]; then
   log "${basedir} does not exist, exiting."
-  exit ERR_CONFIG
+  exit $ERR_CONFIG
 fi
 if [ ! -d ${bindir} ]; then
   log "${bindir} does not exist, exiting."
-  exit ERR_CONFIG
+  exit $ERR_CONFIG
 fi
 if [ ! -d ${logdir} ]; then
   log "${logdir} does not exist, exiting."
-  exit ERR_CONFIG
+  exit $ERR_CONFIG
 fi
 if [ ! -d ${dest_dir} ]; then
   log "${dest_dir} does not exist, exiting."
-  exit ERR_CONFIG
+  exit $ERR_CONFIG
 fi
 
 check_upload_host ${upload_user} ${upload_host}
@@ -192,14 +193,14 @@ fi
 log "`date`: Copy completed, running archive on upload host..."
 logpub "ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}* "
 
-ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}*
-ret=$?
-if [ $ret -ne 0 ]; then
-  log "Uploading of images failed ($ret)."
-  exit 1
-fi
+# ssh ${upload_user}'@'${upload_host} svc/bin/run_archive.sh ${pattern}*
+# ret=$?
+#if [ $ret -ne 0 ]; then
+#  log "Uploading of images failed ($ret)."
+#  exit 1
+#fi
 
-logpub "ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}"
-ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}
+# logpub "ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}"
+#ssh ${upload_user}'@'${upload_host} svc/bin/run_encode.sh ${img_directory} ${frame_rate}
 
 logpub "Upload done."
