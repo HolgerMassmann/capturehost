@@ -26,6 +26,18 @@ function log() {
   echo "${tstamp}: ${message}" >> ${log_file}
 }
 
+function setup_run_images_directory() {
+  local run_path=/run/images
+  if [[ -d ${run_path} ]];then
+    log "${run_path} exists."
+    return 0
+  fi
+
+  # Create /run/images and hand it over to pi.
+  log "Recreating ${run_path} directory."
+  sudo mkdir ${run_path} && sudo chown pi ${run_path} && sudo chgrp pi ${run_path} > /dev/null
+}
+
 function restart_image_capture() {
   log "Terminating process ${pid}"
   # kill $( pgrep ${program_name} )
@@ -64,6 +76,7 @@ function process_exists() {
     #
     isalive
   else
+    setup_run_images_directory
     restart_image_capture
   fi
 }

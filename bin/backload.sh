@@ -105,7 +105,7 @@ fi
 check_upload_host ${upload_user} ${upload_host}
 
 #
-# Handle optional input parameters day and  hour-of-day.
+# Handle input parameters month, day and  hour-of-day.
 #
 month=$1
 day=$2
@@ -131,17 +131,17 @@ year=$( date '+%Y' )
 #
 previous_hour=${hour_of_day}
 
-log "Using day=${day}, previous hour=${previous_hour}"
+log "Using day=${day}, hour=${hour_of_day}"
 
 #
 # Build directory name for encode call later.
 #
-img_directory=$( printf '%04d/%02d/%02d/%02d' ${year} ${month#0} ${day#0} ${previous_hour#0} )
+img_directory=$( printf '%04d/%02d/%02d/%02d' ${year} ${month#0} ${day#0} ${hour_of_day#0} )
 
 #
 # Build search pattern for selecting images to copy.
 #
-pattern=$( printf 'r_%d%02d%02d' ${month#0} ${day#0} ${previous_hour#0} )
+pattern=$( printf 'r_%d%02d%02d' ${month#0} ${day#0} ${hour_of_day#0} )
 
 log "Matching ${pattern}*"
 log "Copying $( ls ${img_base_dir}/${pattern}* | wc -l ) files."
